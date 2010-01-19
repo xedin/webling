@@ -1,0 +1,3 @@
+Web console for Gremlin.
+
+Based on Sinatra, runs on jruby.
