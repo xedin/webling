@@ -9,25 +9,29 @@ begin
   java_import com.tinkerpop.gremlin.GremlinEvaluator
   java_import com.tinkerpop.gremlin.statements.EvaluationException
   java_import com.tinkerpop.gremlin.statements.SyntaxException
+  
 rescue 
   print "Please install gremlin standalone in your JRuby CLASS_PATH\n"
   exit 1
 end
+
+  
+set :gremlin, GremlinEvaluator.new
+set :views, File.dirname(__FILE__) + '/templates'
 
 get '/' do
   haml :index
 end
 
 post '/' do
-  gremlin = GremlinEvaluator.new
   stream  = StringBufferInputStream.new(params[:code])
-
+  
   @result = begin 
-    gremlin.evaluate(stream)
+    options.gremlin.evaluate(stream)
   rescue 
     'Error: ' + $!
   end
 
-  haml :index
+  @result.to_s
 end
 
