@@ -3,7 +3,8 @@ require 'rubygems'
 require 'sinatra'
 require 'haml'
 
-java_import java.io.StringBufferInputStream
+java_import java.util.ArrayList
+java_import java.io.ByteArrayInputStream
 
 begin
   java_import com.tinkerpop.gremlin.GremlinEvaluator
@@ -24,14 +25,14 @@ get '/' do
 end
 
 post '/' do
-  stream  = StringBufferInputStream.new(params[:code])
-  
+  code = params[:code].to_java_bytes
+
   @result = begin 
-    options.gremlin.evaluate(stream)
+    options.gremlin.evaluate(ByteArrayInputStream.new(code))
   rescue 
     'Error: ' + $!
   end
 
-  @result.to_s
+  (@result.is_a?(ArrayList) && @result.size == 1) ? @result[0].to_s : @result.to_s 
 end
 

@@ -1,9 +1,10 @@
 /*
 TryMongo
-Author: Kyle Banker (http://www.kylebanker.com)
+Original version from: Kyle Banker (http://www.kylebanker.com)
+Rerewritten to fit gremlin needs by: Pavel A. Yaskevich
 Date: September 1, 2009
 
-(c) Creative Commons 2009
+(c) Creative Commons 2010
 http://creativecommons.org/licenses/by-sa/2.5/
 */
 
@@ -11,15 +12,25 @@ http://creativecommons.org/licenses/by-sa/2.5/
 var ReadLine = function(options) {
   this.options      = options || {};
   this.htmlForInput = this.options.htmlForInput;
-  
-  this.inputHandler = function(h, v) { 
+  this.inputHandler = function(h, v, scope) { 
     if(v == 'help') {
       h.insertResponse('Coming soon');
       h.newPromptLine();
       return null;
     }
-    
-    $.post('/', { code : v }, function(value) { 
+   
+    req = '';
+
+    if(scope == true) {
+      for(i = 0; i < h.scopeHistory.length; i++) {
+          req += h.scopeHistory[i] + "\n";
+      }
+      req += "end\n";
+    } else {
+      req = v;
+    }
+
+    $.post('/', { code : req }, function(value) { 
       h.insertResponse(value);
 
       // Save to the command history...
@@ -27,20 +38,21 @@ var ReadLine = function(options) {
         h.history.push(lineValue);
         h.historyPtr = h.history.length;
       }
-      
+
+      h.scopeHistory = [];
       h.newPromptLine();
     });
-  },
+  };
   this.terminal     = $(this.options.terminalId || "#terminal");
   this.lineClass    = this.options.lineClass || '.readLine';
   this.history      = [];
   this.historyPtr   = 0;
-
+  this.depth        = 0;
+  this.scopeHistory = [];
   this.initialize();
 };
 
 ReadLine.prototype = {
-
   initialize: function() {
     this.addInputLine();
   },
@@ -50,12 +62,12 @@ ReadLine.prototype = {
     this.activeLine.attr({disabled: true});
     this.activeLine.next('.spinner').remove();
     this.activeLine.removeClass('active');
-    this.addInputLine(0);
+    this.addInputLine(this.depth);
   },
 
   // Enter a new input line with proper behavior.
-  addInputLine: function(stackLevel) {
-    stackLevel = stackLevel || 0;
+  addInputLine: function(depth) {
+    stackLevel = depth || 0;
     this.terminal.append(this.htmlForInput(stackLevel));
     var ctx = this;
     ctx.activeLine = $(this.lineClass + '.active');
@@ -99,8 +111,7 @@ ReadLine.prototype = {
       if(this.historyPtr - 1 >= 0) {
         this.historyPtr -= 1;
       }
-    }
-    else {
+    } else {
       if(this.historyPtr + 1 < this.history.length) {
         this.historyPtr += 1;
       }
@@ -113,8 +124,30 @@ ReadLine.prototype = {
       this.newPromptLine();
       return null;
     }
+    
+    if(value.trim() == 'end') {
+      this.depth--;
+      if(this.depth == 0) { 
+        this.inputHandler(this, value, true);
+        return false;
+      }
+    }
 
-    this.inputHandler(this, value);
+    var reserved = false;
+    for(i = 0; i < ReservedWords.length; i++) {
+        if(value.match(ReservedWords[i])) {
+            reserved = true;
+            this.depth++;
+        }
+    }
+
+    this.scopeHistory.push(value);
+    
+    if(this.depth == 0) {
+      this.inputHandler(this, value);
+    } else {
+      this.newPromptLine(this.depth);
+    }
   },
 
   insertResponse: function(response) {
@@ -146,14 +179,11 @@ var DefaultInputHtml = function(stack) {
            "<img class='spinner' src='/img/spinner.gif' style='display:none;' /></div>";
 }
 
-var EnterKeyCode     = 13;
-var UpArrowKeyCode   = 38;
-var DownArrowKeyCode = 40;
+var EnterKeyCode      = 13;
+var UpArrowKeyCode    = 38;
+var DownArrowKeyCode  = 40;
+var ReservedWords     = ['repeat', 'while', 'if', 'foreach', 'func', 'path'];
 
 $(document).ready(function() {
-//  var mongo       = new MongoHandler();
-//  var terminal    = new ReadLine({htmlForInput: DefaultInputHtml,
-//                                  handler: mongo._process,
-//                                  scoper: mongo});
-    var terminal    = new ReadLine({htmlForInput: DefaultInputHtml});
+    var terminal = new ReadLine({htmlForInput: DefaultInputHtml});
 });
