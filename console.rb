@@ -17,7 +17,7 @@ rescue
 end
 
 enable :sessions
-#set :gremlin, GremlinEvaluator.new
+
 set :evaluators, {}
 set :views, File.dirname(__FILE__) + '/templates'
 
@@ -36,7 +36,7 @@ post '/' do
   code = params[:code].to_java_bytes
 
   @result = begin
-    session[:id] = rand(917834) unless session.has_key?(:id)
+    session[:id] = Digest::SHA1.hexdigest(rand(917834).to_s + request.ip) unless session.has_key?(:id)
     evaluator_by_session(session[:id]).evaluate(ByteArrayInputStream.new(code))
   rescue 
     'Error: ' + $!
