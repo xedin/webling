@@ -16,9 +16,17 @@ rescue
   exit 1
 end
 
-  
-set :gremlin, GremlinEvaluator.new
+enable :sessions
+#set :gremlin, GremlinEvaluator.new
+set :evaluators, {}
 set :views, File.dirname(__FILE__) + '/templates'
+
+def evaluator_by_session(id)
+  unless options.evaluators[id]
+    options.evaluators[id] = GremlinEvaluator.new
+  end
+  options.evaluators[id]
+end
 
 get '/' do
   haml :index
@@ -27,8 +35,9 @@ end
 post '/' do
   code = params[:code].to_java_bytes
 
-  @result = begin 
-    options.gremlin.evaluate(ByteArrayInputStream.new(code))
+  @result = begin
+    session[:id] = rand(917834) unless session.has_key?(:id)
+    evaluator_by_session(session[:id]).evaluate(ByteArrayInputStream.new(code))
   rescue 
     'Error: ' + $!
   end
