@@ -18,6 +18,34 @@ var ReadLine = function(options) {
       h.newPromptLine();
       return null;
     }
+
+    
+    if(/visualize/.test(v)) {
+      var graph = "$_g";
+      var parts = v.split(' ');
+
+      if(parts.length == 2) {
+        graph = parts[1];
+      }
+
+      $.get('/visualize', { g : graph }, function(value) {
+        if(/Could not/.test(value)) {
+          h.insertResponse(value);   
+        } else {
+          ht.loadJSON(value);
+          ht.refresh();
+          $('#graph').show();
+          h.insertResponse('true');
+        }
+
+        h.history.push(v);
+        h.historyPtr = h.history.length;
+
+        h.newPromptLine();
+      }, "json");
+
+      return null;
+    }
    
     req = '';
 

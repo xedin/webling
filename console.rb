@@ -2,6 +2,7 @@ require 'java'
 require 'rubygems'
 require 'sinatra'
 require 'haml'
+require 'functions'
 
 java_import java.util.ArrayList
 java_import java.io.ByteArrayInputStream
@@ -21,27 +22,29 @@ enable :sessions
 set :evaluators, {}
 set :views, File.dirname(__FILE__) + '/templates'
 
-def evaluator_by_session(id)
-  unless options.evaluators[id]
-    options.evaluators[id] = GremlinEvaluator.new
-  end
-  options.evaluators[id]
-end
-
 get '/' do
   haml :index
 end
 
-post '/' do
-  code = params[:code].to_java_bytes
+get '/visualize' do
+  graph   = params[:g] || '$_g'
+  command = "g:json(.)".to_java_bytes
+  result  = JSON(evaluate_code(command))
 
-  @result = begin
-    session[:id] = Digest::SHA1.hexdigest(rand(917834).to_s + request.ip) unless session.has_key?(:id)
-    evaluator_by_session(session[:id]).evaluate(ByteArrayInputStream.new(code))
-  rescue 
-    'Error: ' + $!
+  begin
+    v = {}
+    v[:id]   = result['_id']
+    v[:data] = result['properties']
+    v[:children] = children(graph, result['outE'], result['inE']) 
+  rescue
+    v = 'Could not visualize graph ' + graph
   end
 
-  (@result.is_a?(ArrayList) && @result.size == 1) ? @result[0].to_s : @result.to_s 
+  v.to_json
+end
+
+post '/' do
+  code = params[:code].to_java_bytes
+  evaluate_code(code)  
 end
 
