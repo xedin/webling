@@ -32,13 +32,13 @@ def children(graph, out_edges, in_edges, depth = 0)
   
   children = []
   in_edges.uniq.each do |id|
-    command = "g:json(#{graph}/E[@id = #{id}]/outV)".to_java_bytes
+    command = "g:json(#{graph}/E[@id = \"#{id}\"]/outV)".to_java_bytes
     vertex = JSON(evaluate_code(command))
     children << children_hash(vertex, graph, depth)
   end
 
   out_edges.uniq.each do |id|
-    command = "g:json(#{graph}/E[@id = #{id}]/inV)".to_java_bytes
+    command = "g:json(#{graph}/E[@id = \"#{id}\"]/inV)".to_java_bytes
     vertex = JSON(evaluate_code(command))
     children << children_hash(vertex, graph, depth)
   end 

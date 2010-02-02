@@ -62,7 +62,7 @@ var ReadLine = function(options) {
       h.insertResponse(value);
 
       // Save to the command history...
-      if((lineValue = v.trim()) !== "") {
+      if((lineValue = $.trim(v)) !== "") {
         h.history.push(lineValue);
         h.historyPtr = h.history.length;
       }
@@ -148,12 +148,12 @@ ReadLine.prototype = {
 
   // Return the handler's response.
   processInput: function(value) {
-    if(value.trim() == '') {
+    if($.trim(value) == '') {
       this.newPromptLine();
       return null;
     }
     
-    if(value.trim() == 'end') {
+    if($.trim(value) == 'end') {
       this.depth--;
       if(this.depth == 0) { 
         this.inputHandler(this, value, true);
